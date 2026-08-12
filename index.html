@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#555cc8" />
+    <meta name="description" content="一个温柔的个人待办与工作流应用，数据保存在你自己的浏览器中。" />
+    <meta name="application-name" content="喵汪待办" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="喵汪待办" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>喵汪待办</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="phone-shell desktop-app" aria-label="喵汪待办桌面应用">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow" id="headerEyebrow">A GENTLE DAY</p>
+          <h1 id="pageTitle" class="handwritten-title">穿越回的今天，<br />永远是最美好的一天</h1>
+        </div>
+        <div class="header-actions"><span class="desktop-date" id="desktopDate"></span><button class="round-btn" id="encourageBtn" aria-label="查看今日鼓励">✦</button></div>
+      </header>
+
+      <section class="page active" id="todayPage" data-page="today">
+        <div class="today-intro desktop-hero">
+          <div class="today-intro-copy">
+            <p class="date-line" id="todayDate"></p>
+            <p class="weather-copy">看见今天，也看见这一周和这个月。</p>
+          </div>
+          <div class="progress-periods" aria-label="任务完成进度">
+            <div class="today-progress-card" id="dayProgress" style="--progress-width:0%">
+              <div class="today-progress-head"><span><strong>今日计划</strong><small id="dayProgressCount">0 / 0 已完成</small></span><b>0%</b></div>
+              <div class="today-progress-track"><i></i><span></span><span></span><span></span></div>
+              <div class="today-progress-foot"><small id="dayProgressRemain">今天还没有任务</small><small id="dayProgressMessage">从一件很小的事开始就好。</small></div>
+            </div>
+            <div class="period-progress" id="weekProgress" style="--progress:0deg"><div><strong>0%</strong></div><span>本周</span><small>0/0</small></div>
+            <div class="period-progress" id="monthProgress" style="--progress:0deg"><div><strong>0%</strong></div><span>本月</span><small>0/0</small></div>
+          </div>
+        </div>
+
+        <button class="carry-banner hidden" id="carryBanner">
+          <span class="carry-icon">↻</span>
+          <span><strong id="carryCount">0 件事从昨天轻轻走来</strong><small>别急，我们今天继续</small></span>
+          <span>›</span>
+        </button>
+
+        <button class="today-add-main" id="todayAddMain">＋ 添加今天要做的事</button>
+        <div class="quick-date-actions"><button id="addTomorrowBtn">＋ 明天</button><button id="addWeekBtn">＋ 本周</button></div>
+
+        <div class="task-view-head">
+          <div><p class="eyebrow">TODAY TASKS</p><h2>今日任务</h2></div>
+          <div class="task-view-actions"><button class="batch-manage-btn" id="batchManageBtn">批量管理</button><button class="ai-plan-btn" id="aiPlanBtn">✦ AI 拆解任务</button></div>
+        </div>
+        <div class="filter-row task-modes" id="taskModes" aria-label="任务视图">
+          <button class="filter-pill active" data-mode="timeline">时间线</button>
+          <button class="filter-pill" data-mode="area">按板块</button>
+          <button class="filter-pill" data-mode="done">已完成</button>
+        </div>
+        <button class="ai-plans-entry" id="aiPlansBtn">
+          <span class="ai-plans-entry-icon">✦</span>
+          <span><strong>AI 大计划</strong><small id="aiPlansSummary">查看并管理 AI 拆解任务</small></span>
+          <b id="aiPlansCount">0</b><i>›</i>
+        </button>
+        <div class="batch-bar hidden" id="batchBar"><button id="batchSelectAll">全选今日</button><span>已选 <b id="batchCount">0</b> 项</span><button class="batch-delete" id="batchDeleteBtn" disabled>删除所选</button><button id="batchCancelBtn">取消</button></div>
+
+        <div class="task-list focus-task-list" id="todayTaskList"></div>
+
+        <section class="thoughts-dock section-card">
+          <button class="thoughts-toggle" id="thoughtsToggle">
+            <span class="thoughts-icon">✦</span>
+            <span><strong>想法暂存处</strong><small>有灵感时再用，不打扰今天的计划</small></span>
+            <b id="thoughtsBadge">0</b><i>⌄</i>
+          </button>
+          <div class="thoughts-body hidden" id="thoughtsBody">
+            <div class="quick-input-row">
+              <input id="quickInput" maxlength="60" placeholder="记下一个突然冒出的想法…" />
+              <button id="quickVoiceBtn" aria-label="模拟语音输入">🎙</button>
+              <button id="quickAddBtn" aria-label="加入收集箱">＋</button>
+            </div>
+            <div class="quick-meta">
+              <label><input type="checkbox" id="quickToday" /><span>勾选后直接放进今天</span></label>
+              <button id="inboxBtn">查看收集箱 <b id="inboxCount">0</b> ›</button>
+            </div>
+            <div class="inbox-panel hidden" id="inboxPanel"><div class="inbox-head"><strong>收集箱</strong><small>把念头整理成行动</small></div><div id="inboxList"></div></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="page" id="calendarPage" data-page="calendar">
+        <div class="section-card calendar-card">
+          <div class="calendar-head">
+            <button class="icon-text-btn" id="prevMonth" aria-label="上个月">‹</button>
+            <div><p class="eyebrow">MONTHLY VIEW</p><h2 id="monthLabel"></h2></div>
+            <button class="icon-text-btn" id="nextMonth" aria-label="下个月">›</button>
+          </div>
+          <div class="week-row"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+        <div class="date-agenda">
+          <div class="section-title"><div><p class="eyebrow">DAY PLAN</p><h2 id="selectedDateTitle"></h2></div><button class="text-btn" id="calendarAdd">＋ 添加</button></div>
+          <div id="selectedDateTasks"></div>
+        </div>
+      </section>
+
+      <section class="page" id="statsPage" data-page="stats">
+        <div class="stats-hero section-card">
+          <p class="eyebrow">THIS MONTH</p>
+          <p class="stats-number"><strong id="monthRate">0%</strong><span>完成率</span></p>
+          <p id="statsSentence">每一个小小完成，都值得被看见。</p>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card"><span>▦</span><strong id="totalTasksTop">0</strong><small>总事项</small></div>
+          <div class="metric-card"><span>✓</span><strong id="doneCount">0</strong><small>已完成</small></div>
+          <div class="metric-card"><span>◉</span><strong id="rateTop">0%</strong><small>完成率</small></div>
+        </div>
+        <div class="section-card radar-card">
+          <div class="section-title"><div><p class="eyebrow">FIVE DIMENSIONS</p><h2>五象生活 · 平衡雷达</h2></div></div>
+          <div class="radar-wrap">
+            <svg id="lifeRadar" viewBox="0 0 300 270" role="img" aria-label="五个人生切面任务数量雷达图">
+              <g class="radar-grid" id="radarGrid"></g>
+              <polygon id="radarShape" points="150,135 150,135 150,135 150,135 150,135"></polygon>
+              <g id="radarPoints"></g>
+              <text x="150" y="15" text-anchor="middle">我的职业</text>
+              <text x="276" y="105" text-anchor="end">学无止境</text>
+              <text x="245" y="252" text-anchor="middle">我的身体</text>
+              <text x="55" y="252" text-anchor="middle">我的灵魂</text>
+              <text x="24" y="105">无聊的重要时光</text>
+            </svg>
+          </div>
+          <div class="area-counts" id="areaCounts"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-title"><div><p class="eyebrow">LAST 7 DAYS</p><h2>最近七天</h2></div></div>
+          <div class="bar-chart" id="weekChart"></div>
+        </div>
+        <div class="section-card priority-card">
+          <div><p class="eyebrow">COLOR OF LIFE</p><h2>优先级分布</h2><p class="subtle">颜色不是压力，只是帮你看清轻重缓急。</p></div>
+          <div class="donut" id="priorityDonut"><div><strong id="totalTasksStat">0</strong><span>件事情</span></div></div>
+          <div class="legend" id="priorityLegend"></div>
+        </div>
+      </section>
+
+      <section class="page" id="recurringPage" data-page="recurring">
+        <div class="recurring-hero">
+          <span class="hero-emoji">↻</span>
+          <div><p class="eyebrow">REPEAT WITH EASE</p><h2>把重复的事，一次安排好</h2><p>选好日期和星期，每天会自动生成同样的待办。</p></div>
+        </div>
+        <div class="section-card recurring-builder">
+          <div class="section-title"><div><p class="eyebrow">BATCH ARRANGE</p><h2>批量安排一段时间</h2></div></div>
+          <p class="subtle builder-copy">在日期区间内，按选中的星期自动生成同样几件事，生成后每条仍可单独调整。</p>
+          <form id="recurringForm">
+            <label class="field"><span>计划名称</span><input id="recurringName" required placeholder="例如：晨间充电计划" /></label>
+            <div class="two-col"><label class="field"><span>开始日期</span><input type="date" id="recurringStart" required /></label><label class="field"><span>结束日期</span><input type="date" id="recurringEnd" required /></label></div>
+            <fieldset class="weekday-field"><legend>重复的星期（不选 = 每天）</legend><div id="weekdayOptions"><label><input type="checkbox" value="1"><span>一</span></label><label><input type="checkbox" value="2"><span>二</span></label><label><input type="checkbox" value="3"><span>三</span></label><label><input type="checkbox" value="4"><span>四</span></label><label><input type="checkbox" value="5"><span>五</span></label><label><input type="checkbox" value="6"><span>六</span></label><label><input type="checkbox" value="0"><span>日</span></label></div></fieldset>
+            <div class="rec-item-builder">
+              <label class="field"><span>要重复做的事项</span><input id="recurringItemName" placeholder="事项名称" /></label>
+              <fieldset class="area-field compact"><legend>属于哪个板块</legend><div class="area-options">
+                <label><input type="radio" name="recArea" value="career" checked><span>💼 职业</span></label><label><input type="radio" name="recArea" value="growth"><span>📚 学习</span></label><label><input type="radio" name="recArea" value="body"><span>💪 身体</span></label><label><input type="radio" name="recArea" value="soul"><span>✨ 灵魂</span></label><label><input type="radio" name="recArea" value="moments"><span>⌛ 时光</span></label>
+              </div></fieldset>
+              <div class="two-col"><label class="field"><span>重要程度</span><select id="recurringPriority"><option value="red">重要且紧急</option><option value="orange" selected>重要不紧急</option><option value="blue">紧急不重要</option><option value="green">不重要不紧急</option></select></label><label class="field"><span>紧迫程度</span><select id="recurringUrgency"><option value="must">🔴 必须今天</option><option value="best" selected>🔵 最好今天</option></select></label></div>
+              <div class="two-col"><label class="field"><span>时段</span><select id="recurringPeriod"><option>上午</option><option>下午</option><option>晚上</option><option>全天</option></select></label><label class="field"><span>时间</span><input type="time" id="recurringTime" /></label></div>
+              <button type="button" class="secondary-btn full" id="addRecurringItemBtn">＋ 加入这件事</button>
+            </div>
+            <div class="recurring-draft-list" id="recurringDraftItems"></div>
+            <button type="submit" class="primary-btn full">生成周期待办</button>
+          </form>
+        </div>
+        <div class="section-title recurring-title"><div><p class="eyebrow">MY PLANS</p><h2>已生成的计划</h2></div></div>
+        <div id="recurringList"></div>
+      </section>
+
+      <section class="page" id="profilePage" data-page="profile">
+        <div class="profile-hero section-card">
+          <div class="avatar">🌿</div>
+          <div><p class="eyebrow">MY LITTLE GARDEN</p><h2>我的小花园</h2><p>你的每一次坚持，都在这里长成叶子。</p></div>
+        </div>
+        <div class="section-card settings-card">
+          <div class="section-title"><div><p class="eyebrow">REMINDER FRIEND</p><h2>提醒小伙伴</h2></div></div>
+          <div class="character-options" id="characterOptions">
+            <button data-character="pear"><span>🍐</span><strong>小梨</strong><small>温柔陪伴</small></button>
+            <button data-character="cat"><span>🐱</span><strong>小猫</strong><small>轻轻催促</small></button>
+            <button data-character="dog"><span>🐶</span><strong>小狗</strong><small>元气鼓励</small></button>
+          </div>
+          <button class="secondary-btn full test-reminder" id="testReminderBtn">试触发一次提醒</button>
+        </div>
+        <div class="section-card">
+          <div class="section-title"><div><p class="eyebrow">SOUP BANK</p><h2>我的鸡汤文库</h2></div></div>
+          <div class="quote-list" id="quoteList"></div>
+          <div class="quote-add-row"><input id="quoteInput" maxlength="80" placeholder="写一句给自己的话…" /><button id="addQuoteBtn">添加</button></div>
+        </div>
+        <div class="section-card menu-list">
+          <button id="showArchiveBtn"><span>📦</span><div><strong>已归档的事情</strong><small>看看走过的路</small></div><b>›</b></button>
+          <button id="installAppBtn"><span>⌘</span><div><strong>安装到桌面 / Dock</strong><small>以独立 App 窗口打开</small></div><b>›</b></button>
+          <button id="exportBtn"><span>↗</span><div><strong>导出数据</strong><small>保存为 JSON 备份</small></div><b>›</b></button>
+          <button id="importBtn"><span>↙</span><div><strong>导入数据</strong><small>从本地版迁移 JSON 备份</small></div><b>›</b></button>
+          <button id="resetBtn"><span>↺</span><div><strong>恢复示例数据</strong><small>重新体验完整原型</small></div><b>›</b></button>
+        </div>
+        <div class="data-migration-note"><span>☂</span><p><strong>从本地版迁移到在线版</strong><small>先在旧地址导出 JSON，再在新 HTTPS 网站点击“导入数据”。不同网址的 localStorage 不会自动互通。</small></p></div>
+        <input class="hidden" type="file" id="importFileInput" accept="application/json,.json" />
+      </section>
+
+      <section class="page workflow-page" id="workflowPage" data-page="workflow">
+        <div class="workflow-hero">
+          <div>
+            <p class="eyebrow">WORK, IN MOTION</p>
+            <h2>把工作拆细，也把进展看清</h2>
+            <p>项目和执行任务留在这里。只有你手动关联的任务，才会轻轻出现在首页事项下面。</p>
+          </div>
+          <button class="workflow-new-project" id="newProjectBtn">＋ 新建项目</button>
+        </div>
+
+        <div class="workflow-metrics" id="workflowMetrics"></div>
+
+        <section class="workflow-project-panel">
+          <div class="workflow-section-head">
+            <div><p class="eyebrow">PROJECTS</p><h2>项目</h2></div>
+            <button class="workflow-text-button hidden" id="showAllProjectsBtn">查看全部项目</button>
+          </div>
+          <div class="workflow-projects" id="workflowProjects"></div>
+        </section>
+
+        <section class="workflow-task-panel">
+          <div class="workflow-section-head workflow-task-head">
+            <div><p class="eyebrow">TASKS</p><h2 id="workflowTaskHeading">所有工作任务</h2></div>
+            <button class="workflow-primary-small" id="newWorkTaskBtn">＋ 新建任务</button>
+          </div>
+          <form class="workflow-quick-add" id="workflowQuickForm">
+            <span>＋</span>
+            <input id="workflowQuickTitle" maxlength="100" placeholder="输入任务名称，按 Enter 立即创建" autocomplete="off" />
+            <select id="workflowQuickProject" aria-label="所属项目"></select>
+            <button type="submit">添加</button>
+          </form>
+          <div class="workflow-filters" id="workflowFilters" aria-label="工作流筛选">
+            <button class="active" data-work-filter="all">全部</button>
+            <button data-work-filter="todo">Todo</button>
+            <button data-work-filter="doing">Doing</button>
+            <button data-work-filter="waiting">Waiting</button>
+            <button data-work-filter="done">Done</button>
+            <button data-work-filter="week">本周</button>
+            <button data-work-filter="due">即将到期</button>
+            <button data-work-filter="overdue">已逾期</button>
+          </div>
+          <div class="workflow-task-list" id="workflowTaskList"></div>
+        </section>
+      </section>
+
+      <button class="fab" id="addTaskBtn" aria-label="添加待办">＋</button>
+
+      <nav class="tabbar" aria-label="主导航">
+        <div class="desktop-brand"><span>✦</span><div><strong>喵汪待办</strong><small>A GENTLE DAY</small></div></div>
+        <button class="active" data-target="today"><span>✎</span><b>今日</b><small>专注此刻的一件事</small></button>
+        <button data-target="calendar"><span>▦</span><b>日历</b><small>把日子铺开来看</small></button>
+        <button data-target="stats"><span>◉</span><b>上帝之眼</b><small>看见生活的全貌</small></button>
+        <button data-target="workflow"><span>⌁</span><b>工作流</b><small>项目与执行任务</small></button>
+        <button data-target="recurring"><span>↻</span><b>周期</b><small>一次安排重复事项</small></button>
+        <button data-target="profile"><span>♧</span><b>我的</b><small>设置与温柔提醒</small></button>
+        <div class="desktop-nav-note"><span>🍐</span><p>不用把一天塞满。<br>完成最重要的一件，就很好。</p></div>
+      </nav>
+    </main>
+
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <section class="bottom-sheet" id="taskSheet" aria-modal="true" role="dialog" aria-labelledby="taskSheetTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">ONE THING AT A TIME</p><h2 id="taskSheetTitle">添加一件事</h2></div><button class="close-btn" data-close>×</button></div>
+      <form id="taskForm">
+        <input type="hidden" id="taskId" />
+        <label class="field"><span>想做什么？</span><input id="taskName" maxlength="40" required placeholder="例如：整理今天的面试笔记" /></label>
+        <button type="button" class="ai-hint-btn" id="taskAiHint">✦ 不知道从哪下手？让 AI 帮你拆成几步</button>
+        <fieldset class="area-field"><legend>属于你的哪一面</legend><div class="area-options">
+          <label><input type="radio" name="area" value="career" checked><span>💼 我的职业</span></label>
+          <label><input type="radio" name="area" value="growth"><span>📚 学无止境</span></label>
+          <label><input type="radio" name="area" value="body"><span>💪 我的身体</span></label>
+          <label><input type="radio" name="area" value="soul"><span>✨ 我的灵魂</span></label>
+          <label><input type="radio" name="area" value="moments"><span>⌛ 无聊的重要时光</span></label>
+        </div></fieldset>
+        <fieldset class="color-field"><legend>重要 / 紧急程度</legend><div class="color-options">
+          <label><input type="radio" name="priority" value="red" /><span class="red">红</span><small>重要紧急</small></label>
+          <label><input type="radio" name="priority" value="orange" checked /><span class="orange">橙</span><small>重要不急</small></label>
+          <label><input type="radio" name="priority" value="blue" /><span class="blue">蓝</span><small>急但不重</small></label>
+          <label><input type="radio" name="priority" value="green" /><span class="green">绿</span><small>有空再做</small></label>
+        </div></fieldset>
+        <fieldset class="urgency-field"><legend>今天的紧迫程度</legend><div><label><input type="radio" name="urgency" value="must"><span>🔴 必须今天</span></label><label><input type="radio" name="urgency" value="best" checked><span>🔵 最好今天</span></label></div></fieldset>
+        <div class="two-col"><label class="field"><span>日期</span><input type="date" id="taskDate" required /></label><label class="field"><span>时段</span><select id="taskPeriod"><option>上午</option><option>下午</option><option>晚上</option><option>全天</option></select></label></div>
+        <div class="two-col"><label class="field"><span>开始</span><input type="time" id="taskStart" /></label><label class="field"><span>结束</span><input type="time" id="taskEnd" /></label></div>
+        <label class="toggle-row"><span><strong>到点提醒</strong><small>打开应用时，会有小伙伴来提醒</small></span><input type="checkbox" id="taskRemind" checked /><i></i></label>
+        <div class="form-actions"><button type="button" class="danger-btn hidden" id="deleteTaskBtn">删除</button><button type="submit" class="primary-btn">保存这件事</button></div>
+      </form>
+    </section>
+
+    <section class="bottom-sheet" id="recordSheet" aria-modal="true" role="dialog" aria-labelledby="recordTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">A LITTLE NOTE</p><h2 id="recordTitle">做完啦，记一小笔</h2></div><button class="close-btn" data-close>×</button></div>
+      <form id="recordForm">
+        <input type="hidden" id="recordTaskId" />
+        <div class="status-chips" id="statusChips"><button type="button" class="active" data-status="完成">完成</button><button type="button" data-status="部分">部分</button><button type="button" data-status="卡住">卡住</button><button type="button" data-status="没做">没做</button></div>
+        <label class="field"><span>剩余 / 下一步</span><input id="recordLeft" placeholder="还有什么想留给明天？" /></label>
+        <label class="field"><span>此刻的感受</span><input id="recordFeeling" placeholder="松了一口气 / 有点难 / 很开心…" /></label>
+        <label class="field"><span>memo</span><textarea id="recordMemo" rows="3" placeholder="写下方法、发现或一句给自己的话"></textarea></label>
+        <button type="submit" class="primary-btn full">保存短记录</button>
+      </form>
+    </section>
+
+    <section class="bottom-sheet" id="aiSheet" aria-modal="true" role="dialog" aria-labelledby="aiSheetTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">AI DAILY PLANNER</p><h2 id="aiSheetTitle">AI 帮你排期</h2></div><button class="close-btn" data-close>×</button></div>
+      <p class="sheet-intro">先写下目标，或粘贴你在其他大模型获得的完整方案。DeepSeek 会生成周/月概览和可阅读文档；草案经过你审核后才会加入待办。</p>
+      <form id="aiForm">
+        <div class="ai-engine-note"><span>当前引擎</span><strong>DeepSeek V4 Pro · 云端智能规划</strong><small>内容只发送到你自己的云函数；DeepSeek 密钥不会出现在网页代码里。</small></div>
+        <div class="ai-mode-row" id="aiModeRow"><button type="button" class="active" data-ai-mode="goal"><b>✦</b><span><strong>从目标开始</strong><small>让 AI 从零制定方案</small></span></button><button type="button" data-ai-mode="text"><b>▤</b><span><strong>根据文本拆解</strong><small>粘贴其他模型的回答</small></span></button></div>
+        <input type="hidden" id="aiMode" value="goal" />
+        <label class="field"><span id="aiGoalLabel">你要完成的目标</span><textarea id="aiGoal" rows="2" placeholder="例如：两个月内把雅思从 5.5 提升到 7.5"></textarea></label>
+        <label class="field hidden" id="aiSourceField"><span>粘贴完整计划文本</span><textarea id="aiSourceText" rows="9" maxlength="30000" placeholder="把你在其他大模型获得的完整回答粘贴到这里。DeepSeek 会保留核心建议、去掉重复内容，并整理成可以审核的阶段计划。"></textarea><small><b id="aiSourceCount">0</b> / 30000 字</small></label>
+        <label class="field" id="aiContextField"><span>背景补充（可选）</span><input id="aiContext" placeholder="当前基础、每天可用时间、具体要求…" /></label>
+        <label class="field"><span>参考资料网址（可选，每行一个）</span><textarea id="aiReferences" rows="3" placeholder="https://www.ielts.org/..."></textarea><small>云函数会尝试读取公开网页正文；无法读取的页面不会假装引用。</small></label>
+        <div class="two-col"><label class="field"><span>什么时候要用</span><input type="date" id="aiDeadline" required /></label><label class="field"><span>拆解颗粒度</span><select id="aiGranularity"><option value="week" selected>按周拆解</option><option value="month">按月拆解</option></select></label></div>
+        <p class="ai-date-hint" id="aiDateHint">输入“两个月内”等时长时，会自动推算目标日期。</p>
+        <button type="submit" class="primary-btn full" id="aiSubmitBtn">生成计划概览</button>
+      </form>
+    </section>
+
+    <section class="bottom-sheet review-sheet" id="aiReviewSheet" aria-modal="true" role="dialog" aria-labelledby="aiReviewTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">REVIEW BEFORE ADDING</p><h2 id="aiReviewTitle">审核 AI 拆解草案</h2></div><button class="close-btn" data-close>×</button></div>
+      <div class="ai-overview-card">
+        <div><span>目标概览</span><strong id="aiOverviewGoal"></strong><p id="aiOverviewSummary"></p></div>
+        <div class="overview-metrics"><span><b id="aiOverviewCount">0</b> 个阶段</span><span id="aiOverviewGranularity">按周</span><span id="aiOverviewRange"></span><span id="aiOverviewEngine">本地规划</span></div>
+      </div>
+      <button class="document-preview-btn" id="aiReadDocBtn"><span>▤</span><span><strong>阅读完整方案文档</strong><small>查看拆解逻辑、执行方法、衡量指标与参考资料</small></span><b>›</b></button>
+      <p class="review-tip" id="aiReviewTip">这是每周阶段概览。每一周单独审核，通过后再由 DeepSeek 细化到每天；每日草案确认后才加入待办。</p>
+      <div class="review-instruction"><span>↕</span><p><strong>先审核，再加入</strong><small>拖动卡片调整时间顺序；标题、日期、时段和板块都可以修改。</small></p></div>
+      <div class="ai-draft-list" id="aiDraftList"></div>
+      <div class="review-actions"><button class="secondary-btn" id="aiBackBtn">返回修改目标</button><button class="primary-btn" id="aiApproveBtn">保存概览，稍后逐周规划</button></div>
+    </section>
+
+    <section class="bottom-sheet review-sheet" id="aiDailyReviewSheet" aria-modal="true" role="dialog" aria-labelledby="aiDailyReviewTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">REVIEW THIS WEEK</p><h2 id="aiDailyReviewTitle">审核本周每日计划</h2></div><button class="close-btn" id="aiDailyCloseBtn">×</button></div>
+      <div class="daily-overview"><strong id="aiDailyStageTitle"></strong><span id="aiDailyRange"></span><p id="aiDailySummary"></p></div>
+      <p class="review-tip">请逐条审核。可修改名称、日期、时段和时间，也可以拖动或用箭头调整顺序；只有点击底部确认后才会进入日历。</p>
+      <div class="ai-draft-list" id="aiDailyDraftList"></div>
+      <div class="review-actions"><button class="secondary-btn" id="aiDailyBackBtn">返回周概览</button><button class="primary-btn" id="aiDailyApproveBtn">审核通过并加入本周待办</button></div>
+    </section>
+
+    <section class="bottom-sheet ai-plans-sheet" id="aiPlansSheet" aria-modal="true" role="dialog" aria-labelledby="aiPlansTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">AI MASTER PLANS</p><h2 id="aiPlansTitle">AI 大计划</h2></div><button class="close-btn" data-close>×</button></div>
+      <p class="sheet-intro">每次审核通过的 AI 拆解都会保存在这里。放弃一个目标时，可以一次删除整项计划和它生成的全部待办。</p>
+      <div class="ai-plans-list" id="aiPlansList"></div>
+    </section>
+
+    <section class="bottom-sheet ai-document-sheet" id="aiDocumentSheet" aria-modal="true" role="dialog" aria-labelledby="aiDocumentTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><div><p class="eyebrow">YOUR ACTION GUIDE</p><h2 id="aiDocumentTitle">大任务行动方案</h2></div><button class="close-btn" data-close>×</button></div>
+      <article class="plan-document" id="aiDocumentContent"></article>
+      <button class="secondary-btn full document-back-btn" id="aiDocumentBackBtn">返回计划</button>
+    </section>
+
+    <section class="bottom-sheet workflow-drawer" id="projectDrawer" aria-modal="true" role="dialog" aria-labelledby="projectDrawerTitle">
+      <div class="sheet-head"><div><p class="eyebrow">PROJECT DETAILS</p><h2 id="projectDrawerTitle">新建项目</h2></div><button class="close-btn" data-close>×</button></div>
+      <form id="projectForm">
+        <input type="hidden" id="projectId" />
+        <label class="field"><span>项目名称</span><input id="projectName" maxlength="80" required placeholder="例如：Q3 品牌传播" /></label>
+        <label class="field"><span>项目说明</span><textarea id="projectDescription" rows="3" placeholder="项目背景、目标和交付标准"></textarea></label>
+        <div class="two-col"><label class="field"><span>状态</span><select id="projectStatus"><option value="not_started">未开始</option><option value="doing">进行中</option><option value="waiting">Waiting</option><option value="done">已完成</option><option value="paused">暂停</option></select></label><label class="field"><span>Priority</span><select id="projectPriority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></label></div>
+        <div class="two-col"><label class="field"><span>Owner</span><input id="projectOwner" placeholder="负责人" /></label><label class="field"><span>Related People</span><input id="projectPeople" placeholder="多人用逗号分隔" /></label></div>
+        <div class="two-col"><label class="field"><span>Start Date</span><input type="date" id="projectStart" /></label><label class="field"><span>Deadline</span><input type="date" id="projectDeadline" /></label></div>
+        <label class="toggle-row project-archive-row hidden" id="projectArchiveRow"><span><strong>归档项目</strong><small>任务、Notes 和 Timeline 都会保留</small></span><input type="checkbox" id="projectArchived" /><i></i></label>
+        <div class="form-actions"><button type="button" class="danger-btn hidden" id="deleteProjectBtn">删除项目</button><button type="submit" class="primary-btn">保存项目</button></div>
+      </form>
+    </section>
+
+    <section class="bottom-sheet workflow-drawer task-detail-drawer" id="workTaskDrawer" aria-modal="true" role="dialog" aria-labelledby="workTaskDrawerTitle">
+      <div class="sheet-head"><div><p class="eyebrow">TASK DETAIL</p><h2 id="workTaskDrawerTitle">任务详情</h2></div><button class="close-btn" data-close>×</button></div>
+      <form id="workTaskForm">
+        <input type="hidden" id="workTaskId" />
+        <label class="field work-title-field"><span>任务标题</span><input id="workTaskTitle" maxlength="120" required placeholder="写下一个明确的下一步" /></label>
+        <div class="two-col"><label class="field"><span>所属项目</span><select id="workTaskProject"></select></label><label class="field"><span>状态</span><select id="workTaskStatus"><option value="todo">Todo</option><option value="doing">Doing</option><option value="waiting">Waiting</option><option value="done">Done</option></select></label></div>
+        <div class="two-col"><label class="field"><span>Priority</span><select id="workTaskPriority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></label><label class="field"><span>关联首页事项</span><select id="workTaskHomeLink"></select></label></div>
+        <div class="two-col"><label class="field"><span>Plan Date</span><input type="date" id="workTaskPlanDate" /></label><label class="field"><span>Deadline</span><input type="date" id="workTaskDeadline" /></label></div>
+        <div class="two-col"><label class="field"><span>Owner</span><input id="workTaskOwner" placeholder="负责人" /></label><label class="field"><span>Related People</span><input id="workTaskPeople" placeholder="多人用逗号分隔" /></label></div>
+        <section class="waiting-fields hidden" id="waitingFields">
+          <div class="waiting-label"><span>◷</span><div><strong>Waiting 信息</strong><small>把等待对象和跟进时间写清楚</small></div></div>
+          <div class="two-col"><label class="field"><span>在等谁</span><input id="workTaskWaitingFor" /></label><label class="field"><span>Follow-up</span><input type="date" id="workTaskFollowUp" /></label></div>
+          <label class="field"><span>在等什么</span><input id="workTaskWaitingReason" /></label>
+        </section>
+        <label class="field"><span>Notes</span><textarea id="workTaskNotes" rows="5" placeholder="工作背景、具体要求、修改意见或待确认事项"></textarea></label>
+        <section class="work-timeline hidden" id="workTimelineSection">
+          <div class="timeline-heading"><div><p class="eyebrow">TIMELINE</p><h3>工作记录</h3></div><small>最新记录在上</small></div>
+          <div class="timeline-add"><textarea id="workLogContent" rows="2" placeholder="记录一次沟通、反馈或进展…"></textarea><button type="button" id="addWorkLogBtn">添加记录</button></div>
+          <div class="timeline-list" id="workTimelineList"></div>
+        </section>
+        <div class="form-actions"><button type="button" class="danger-btn hidden" id="deleteWorkTaskBtn">删除任务</button><button type="submit" class="primary-btn">保存任务</button></div>
+      </form>
+    </section>
+
+    <div class="encourage-modal" id="encourageModal" role="dialog" aria-modal="true">
+      <div class="encourage-card">
+        <button class="close-btn" data-close>×</button>
+        <div class="pet-art" id="petArt">🐱</div>
+        <p class="eyebrow">A NOTE FOR YOU</p>
+        <h2 id="encourageTitle">嘿，慢慢来就很好</h2>
+        <p id="encourageQuote"></p>
+        <button class="primary-btn full" data-close>收到，继续生活</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="https://static.cloudbase.net/cloudbase-js-sdk/2.28.6/cloudbase.full.js"></script>
+    <script src="./web-config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
