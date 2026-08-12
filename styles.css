@@ -196,41 +196,16 @@ body { background: radial-gradient(circle at 50% -10%, #f9f9fc 0, #e7e9f1 62%, #
 .subtask-count { color:#5f66bd; background:#eef0ff; padding:2px 6px; border-radius:6px; }
 .task-breakdown-panel { display:none; overflow:hidden; padding:0; border-color:#dfe1ec; background:linear-gradient(180deg,#fff 0%,#fbfbfe 100%); }
 .task-breakdown-panel.has-task { display:block; }
-.breakdown-empty { min-height:310px; display:grid; place-content:center; justify-items:center; padding:34px 25px; text-align:center; }
-.breakdown-empty > span { width:58px; height:58px; display:grid; place-items:center; border-radius:18px; color:#5c63c7; background:#eceeff; font-size:28px; }
-.breakdown-empty h3 { margin:16px 0 8px; color:#343953; font-size:17px; }
-.breakdown-empty p { max-width:330px; margin:0; color:#85899b; font-size:11px; line-height:1.75; }
-.breakdown-empty div { margin-top:22px; display:grid; grid-template-columns:25px 1fr; gap:7px 9px; align-items:center; text-align:left; }
-.breakdown-empty b { width:23px; height:23px; display:grid; place-items:center; border-radius:8px; color:#5c63c7; background:#f0f1ff; font-size:9px; }
-.breakdown-empty small { color:#777c91; font-size:9px; }
-.breakdown-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 21px 9px; }
-.breakdown-head > div { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.breakdown-head > button { width:31px; height:31px; border:0; border-radius:10px; color:#85899a; background:#f2f3f7; font-size:18px; cursor:pointer; }
-.breakdown-area { padding:4px 8px; border-radius:8px; color:#656a80; background:#f1f2f7; font-size:9px; }
-.breakdown-title { margin:0; padding:3px 21px 8px; color:#2c3150; font-size:24px; line-height:1.4; }
-.breakdown-summary { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:4px 21px 9px; color:#85899a; font-size:10px; }
-.breakdown-summary button { padding:3px 0; border:0; color:#5c63c4; background:transparent; font-size:9px; cursor:pointer; }
-.breakdown-progress { height:5px; margin:0 21px 18px; overflow:hidden; border-radius:999px; background:#ebecef; }
-.breakdown-progress i { display:block; width:var(--breakdown-progress); height:100%; border-radius:inherit; background:linear-gradient(90deg,#5b62ca,#858be8); transition:width .25s ease; }
-.breakdown-list { display:grid; gap:7px; padding:0 15px 17px; }
-.breakdown-step { display:grid; grid-template-columns:31px minmax(0,1fr) 25px; gap:9px; align-items:center; min-height:57px; padding:8px 8px 8px 10px; border:1px solid #e5e6ee; border-radius:14px; background:white; }
-.breakdown-check { width:28px; height:28px; border:1.7px solid #8d91a4; border-radius:50%; color:white; background:white; font-size:11px; font-weight:900; cursor:pointer; }
-.breakdown-step > span { min-width:0; display:grid; gap:2px; }
-.breakdown-step small { color:#a0a3b1; font-size:7px; letter-spacing:1px; }
-.breakdown-step strong { color:#41465f; font-size:11px; line-height:1.45; word-break:break-word; }
-.breakdown-step.done { background:#f6f7fa; }.breakdown-step.done .breakdown-check { border-color:#6269cb; background:#6269cb; }.breakdown-step.done strong { color:#9b9eac; text-decoration:line-through; }
-.breakdown-delete { width:24px; height:24px; border:0; border-radius:8px; color:#aaaeba; background:transparent; cursor:pointer; }
-.breakdown-delete:hover { color:#c85e5c; background:#fff0ee; }
-.breakdown-first-step { display:flex; align-items:center; gap:11px; padding:14px; border:1px dashed #d8daea; border-radius:14px; color:#7b8094; background:#f8f8fc; }
-.breakdown-first-step > span { width:30px; height:30px; display:grid; place-items:center; border-radius:10px; color:#5d64c7; background:#e9ebff; }
-.breakdown-first-step p { display:grid; gap:4px; margin:0; }.breakdown-first-step strong { color:#5c6178; font-size:10px; }.breakdown-first-step small { font-size:8px; line-height:1.5; }
-.breakdown-form { margin:0 15px 12px; padding:14px; border:1px solid #dfe1f3; border-radius:16px; background:#f3f4ff; }
-.breakdown-form label { display:block; margin-bottom:8px; color:#555bb9; font-size:10px; font-weight:800; }
-.breakdown-form textarea { width:100%; min-height:102px; resize:vertical; padding:11px 12px; border:1px solid #dcdeea; border-radius:11px; outline:none; color:#40455d; background:white; font-size:11px; line-height:1.65; }
-.breakdown-form textarea:focus { border-color:#7a80dc; box-shadow:0 0 0 3px rgba(103,110,210,.1); }
-.breakdown-form > div { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:9px; }
-.breakdown-form small { color:#9296aa; font-size:8px; }.breakdown-form button { min-height:34px; padding:0 12px; border:0; border-radius:10px; color:white; background:#5b62c9; font-size:9px; font-weight:800; cursor:pointer; }
-.breakdown-edit-main { width:calc(100% - 30px); margin:0 15px 16px; padding:10px; border:0; color:#777c91; background:transparent; font-size:9px; cursor:pointer; }
+/* Minimal checklist: intentionally no headings, labels or controls beyond circles */
+.task-breakdown-panel { padding:30px 28px; border:0; background:#fff; box-shadow:none; }
+.minimal-checklist { display:grid; align-content:start; }
+.minimal-step-row { display:grid; grid-template-columns:26px minmax(0,1fr); gap:12px; align-items:start; min-height:46px; padding:7px 2px; border-bottom:1px solid #f0f1f5; }
+.minimal-step-circle { width:24px; height:24px; margin-top:2px; display:grid; place-items:center; padding:0; border:1.6px solid #a6a9b5; border-radius:50%; color:white; background:transparent; font-size:10px; font-weight:850; cursor:pointer; }
+.minimal-step-text { width:100%; min-height:30px; field-sizing:content; padding:3px 0; overflow:hidden; resize:none; border:0; outline:0; color:#34394f; background:transparent; font-size:14px; line-height:1.7; }
+.minimal-step-row.done .minimal-step-circle { border-color:#686ed0; background:#686ed0; }
+.minimal-step-row.done .minimal-step-text { color:#a2a5b0; text-decoration:line-through; }
+.minimal-new-step { border-bottom:0; }
+.minimal-new-step .minimal-step-circle { cursor:text; }
 
 /* DeepSeek planning */
 .ai-mode-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:16px; }.ai-mode-row button { display:grid; grid-template-columns:30px 1fr; gap:8px; align-items:center; padding:12px; border:1px solid #e1e3ec; border-radius:13px; color:#656a7f; background:#f8f8fb; text-align:left; cursor:pointer; }.ai-mode-row button.active { color:#5158be; border-color:#7379db; background:#f1f2ff; box-shadow:0 0 0 2px rgba(101,108,207,.09); }.ai-mode-row b { font-size:17px; }.ai-mode-row span { display:grid; gap:3px; }.ai-mode-row strong { font-size:11px; }.ai-mode-row small { color:#9094a4; font-size:8px; }

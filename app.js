@@ -401,58 +401,80 @@
     panel.classList.toggle('has-task', Boolean(task));
     if (!task) {
       selectedTaskDetailId = '';
-      panel.innerHTML = `<div class="breakdown-empty"><span>☷</span><h3>点开一件事，把它拆小</h3><p>不用一次想清全部。先写下一个能立刻开始的小动作，让大脑只看下一步。</p><div><b>1</b><small>点击左侧待办</small><b>2</b><small>每行写一个小步骤</small><b>3</b><small>做完一个勾一个</small></div></div>`;
+      panel.innerHTML = '';
       return;
     }
 
     const subtasks = taskSubtasks(task);
-    const doneCount = subtasks.filter((item) => item.done).length;
-    const progress = subtasks.length ? Math.round(doneCount / subtasks.length * 100) : 0;
-    const area = AREAS[task.area] || AREAS.career;
-    const list = subtasks.length ? subtasks.map((item, index) => `<div class="breakdown-step ${item.done ? 'done' : ''}">
-      <button class="breakdown-check" data-action="toggle-subtask" data-id="${task.id}" data-subtask-id="${item.id}" aria-label="${item.done ? '改回未完成' : '完成这个小步骤'}">${item.done ? '✓' : ''}</button>
-      <span><small>STEP ${index + 1}</small><strong>${escapeHTML(item.text)}</strong></span>
-      <button class="breakdown-delete" data-action="delete-subtask" data-id="${task.id}" data-subtask-id="${item.id}" aria-label="删除这个小步骤">×</button>
-    </div>`).join('') : `<div class="breakdown-first-step"><span>＋</span><p><strong>先写下第一个可以动手的动作</strong><small>例如“打开招聘网站”“列出三个问题”“找到文件夹”</small></p></div>`;
-    panel.innerHTML = `<div class="breakdown-head">
-      <div><p class="eyebrow">MAKE IT CONCRETE</p><span class="breakdown-area">${area.icon} ${area.name}</span></div>
-      <button data-action="close-task-detail" aria-label="关闭拆解面板">×</button>
-    </div>
-    <h3 class="breakdown-title">${escapeHTML(task.name)}</h3>
-    <div class="breakdown-summary"><span>${doneCount} 项完成 · 共 ${subtasks.length} 项</span>${doneCount ? `<button data-action="clear-done-subtasks" data-id="${task.id}">清除已完成</button>` : ''}</div>
-    <div class="breakdown-progress" style="--breakdown-progress:${progress}%"><i></i></div>
-    <div class="breakdown-list">${list}</div>
-    <form class="breakdown-form" id="breakdownForm">
-      <label for="breakdownInput">把它拆成更小的行动</label>
-      <textarea id="breakdownInput" rows="4" maxlength="600" placeholder="每行写一个小步骤…&#10;例如：&#10;打开面试资料&#10;写下 3 个想问的问题"></textarea>
-      <div><small>支持一次粘贴多行，回车换行</small><button type="submit">＋ 加入小步骤</button></div>
-    </form>
-    <button class="breakdown-edit-main" data-action="edit" data-id="${task.id}">编辑主待办的时间与分类</button>`;
+    const rows = subtasks.map((item) => `<div class="minimal-step-row ${item.done ? 'done' : ''}">
+      <button class="minimal-step-circle" data-action="toggle-subtask" data-id="${task.id}" data-subtask-id="${item.id}" aria-label="${item.done ? '改回未完成' : '完成这个小待办'}">${item.done ? '✓' : ''}</button>
+      <textarea class="minimal-step-text" rows="1" maxlength="120" data-subtask-input data-id="${task.id}" data-subtask-id="${item.id}" aria-label="小待办">${escapeHTML(item.text)}</textarea>
+    </div>`).join('');
+    panel.innerHTML = `<div class="minimal-checklist">${rows}<div class="minimal-step-row minimal-new-step"><span class="minimal-step-circle" aria-hidden="true"></span><textarea class="minimal-step-text" rows="1" maxlength="600" data-new-subtask data-id="${task.id}" aria-label="新增小待办"></textarea></div></div>`;
   }
 
   function openTaskBreakdown(taskId) {
     if (batchMode || !state.tasks.some((task) => task.id === taskId)) return;
     selectedTaskDetailId = taskId;
     renderToday();
+    $('[data-new-subtask]', $('#taskBreakdownPanel'))?.focus();
     if (window.innerWidth < 860) $('#taskBreakdownPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function addTaskSubtasks(event) {
-    event.preventDefault();
-    const task = state.tasks.find((item) => item.id === selectedTaskDetailId);
-    const input = $('#breakdownInput');
-    if (!task || !input) return;
-    const texts = input.value.split(/\n+/).map((text) => text.trim().replace(/^[-*•]\s*/, '')).filter(Boolean);
-    if (!texts.length) return showToast('先写下一个可以动手的小步骤');
-    const existing = new Set(taskSubtasks(task).map((item) => item.text.toLowerCase()));
-    const fresh = texts.filter((text) => !existing.has(text.toLowerCase()));
-    fresh.forEach((text) => task.subtasks.push({ id: uid('step'), text: text.slice(0, 120), done: false, createdAt: Date.now() }));
-    if (!fresh.length) return showToast('这些小步骤已经在清单里了');
+  function addTaskSubtaskLines(taskId, value) {
+    const task = state.tasks.find((item) => item.id === taskId);
+    if (!task) return false;
+    const texts = value.split(/\n+/).map((text) => text.trim().replace(/^[-*•]\s*/, '')).filter(Boolean);
+    if (!texts.length) return false;
+    texts.forEach((text) => taskSubtasks(task).push({ id: uid('step'), text: text.slice(0, 120), done: false, createdAt: Date.now() }));
     task.updatedAt = Date.now();
     saveState();
     renderToday();
-    showToast(`已经拆成 ${fresh.length} 个小步骤`);
-    $('#breakdownInput')?.focus();
+    $('[data-new-subtask]', $('#taskBreakdownPanel'))?.focus();
+    return true;
+  }
+
+  function handleBreakdownKeydown(event) {
+    const input = event.target.closest('.minimal-step-text');
+    if (!input || event.isComposing) return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (input.dataset.newSubtask !== undefined) addTaskSubtaskLines(input.dataset.id, input.value);
+      else $('[data-new-subtask]', $('#taskBreakdownPanel'))?.focus();
+    }
+    if (event.key === 'Backspace' && input.dataset.subtaskInput !== undefined && !input.value) {
+      event.preventDefault();
+      const task = state.tasks.find((item) => item.id === input.dataset.id);
+      if (!task) return;
+      task.subtasks = taskSubtasks(task).filter((item) => item.id !== input.dataset.subtaskId);
+      task.updatedAt = Date.now();
+      saveState(); renderToday();
+      $('[data-new-subtask]', $('#taskBreakdownPanel'))?.focus();
+    }
+  }
+
+  function handleBreakdownInput(event) {
+    const input = event.target.closest('[data-subtask-input]');
+    if (!input) return;
+    const task = state.tasks.find((item) => item.id === input.dataset.id);
+    const subtask = task && taskSubtasks(task).find((item) => item.id === input.dataset.subtaskId);
+    if (!subtask) return;
+    subtask.text = input.value.slice(0, 120);
+    task.updatedAt = Date.now();
+    saveState();
+  }
+
+  function handleBreakdownFocusOut(event) {
+    const input = event.target.closest('[data-new-subtask]');
+    if (input && input.value.trim()) addTaskSubtaskLines(input.dataset.id, input.value);
+  }
+
+  function handleBreakdownPaste(event) {
+    const input = event.target.closest('[data-new-subtask]');
+    const text = event.clipboardData?.getData('text/plain') || '';
+    if (!input || !text.includes('\n')) return;
+    event.preventDefault();
+    addTaskSubtaskLines(input.dataset.id, text);
   }
 
   function handleSubtaskAction(action) {
@@ -465,18 +487,6 @@
       subtask.done = !subtask.done;
       task.updatedAt = Date.now();
       saveState(); renderToday();
-      showToast(subtask.done ? '这个小步骤完成了 ✓' : '已改回待完成');
-    }
-    if (action.dataset.action === 'delete-subtask') {
-      task.subtasks = subtasks.filter((item) => item.id !== action.dataset.subtaskId);
-      task.updatedAt = Date.now();
-      saveState(); renderToday();
-    }
-    if (action.dataset.action === 'clear-done-subtasks') {
-      task.subtasks = subtasks.filter((item) => !item.done);
-      task.updatedAt = Date.now();
-      saveState(); renderToday();
-      showToast('已完成的小步骤已经清理');
     }
   }
 
@@ -1788,7 +1798,10 @@
     $('#quickAddBtn').addEventListener('click', addQuickNote);
     $('#quickInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') addQuickNote(); });
     $('#quickVoiceBtn').addEventListener('click', () => { $('#quickInput').focus(); showToast('可以直接输入，语音能力将在小程序端接入'); });
-    $('#taskBreakdownPanel').addEventListener('submit', addTaskSubtasks);
+    $('#taskBreakdownPanel').addEventListener('keydown', handleBreakdownKeydown);
+    $('#taskBreakdownPanel').addEventListener('input', handleBreakdownInput);
+    $('#taskBreakdownPanel').addEventListener('focusout', handleBreakdownFocusOut);
+    $('#taskBreakdownPanel').addEventListener('paste', handleBreakdownPaste);
     $('#thoughtsToggle').addEventListener('click', () => {
       $('#thoughtsBody').classList.toggle('hidden');
       $('#thoughtsToggle').classList.toggle('open');
@@ -1899,8 +1912,7 @@
       if (action.dataset.action === 'show-all') { showAllTasks = true; renderToday(); }
       if (action.dataset.action === 'task-order-up') moveTaskInArea(action.dataset.id, -1);
       if (action.dataset.action === 'task-order-down') moveTaskInArea(action.dataset.id, 1);
-      if (['toggle-subtask', 'delete-subtask', 'clear-done-subtasks'].includes(action.dataset.action)) handleSubtaskAction(action);
-      if (action.dataset.action === 'close-task-detail') { selectedTaskDetailId = ''; renderToday(); }
+      if (action.dataset.action === 'toggle-subtask') handleSubtaskAction(action);
       if (action.dataset.action === 'toggle-home-links') {
         if (expandedHomeLinks.has(action.dataset.id)) expandedHomeLinks.delete(action.dataset.id);
         else expandedHomeLinks.add(action.dataset.id);
