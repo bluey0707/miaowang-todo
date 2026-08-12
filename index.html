@@ -187,7 +187,11 @@
             <button data-character="cat"><span>🐱</span><strong>小猫</strong><small>轻轻催促</small></button>
             <button data-character="dog"><span>🐶</span><strong>小狗</strong><small>元气鼓励</small></button>
           </div>
-          <button class="secondary-btn full test-reminder" id="testReminderBtn">试触发一次提醒</button>
+          <div class="notification-control">
+            <div><strong id="notificationStatus">系统通知未开启</strong><small id="notificationStatusDetail" aria-live="polite">开启后，应用最小化时也能收到到点提醒</small></div>
+            <button class="secondary-btn" id="enableNotificationsBtn">开启系统通知</button>
+          </div>
+          <button class="secondary-btn full test-reminder" id="testReminderBtn">测试系统提醒</button>
         </div>
         <div class="section-card">
           <div class="section-title"><div><p class="eyebrow">SOUP BANK</p><h2>我的鸡汤文库</h2></div></div>
@@ -288,7 +292,7 @@
         <fieldset class="urgency-field"><legend>今天的紧迫程度</legend><div><label><input type="radio" name="urgency" value="must"><span>🔴 必须今天</span></label><label><input type="radio" name="urgency" value="best" checked><span>🔵 最好今天</span></label></div></fieldset>
         <div class="two-col"><label class="field"><span>日期</span><input type="date" id="taskDate" required /></label><label class="field"><span>时段</span><select id="taskPeriod"><option>上午</option><option>下午</option><option>晚上</option><option>全天</option></select></label></div>
         <div class="two-col"><label class="field"><span>开始</span><input type="time" id="taskStart" /></label><label class="field"><span>结束</span><input type="time" id="taskEnd" /></label></div>
-        <label class="toggle-row"><span><strong>到点提醒</strong><small>打开应用时，会有小伙伴来提醒</small></span><input type="checkbox" id="taskRemind" checked /><i></i></label>
+        <label class="toggle-row"><span><strong>到点提醒</strong><small>开启系统通知后，应用最小化时也会提醒</small></span><input type="checkbox" id="taskRemind" checked /><i></i></label>
         <div class="form-actions"><button type="button" class="danger-btn hidden" id="deleteTaskBtn">删除</button><button type="submit" class="primary-btn">保存这件事</button></div>
       </form>
     </section>

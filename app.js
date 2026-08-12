@@ -2,6 +2,8 @@
   'use strict';
 
   const STORAGE_KEY = 'gentle-todo-v1';
+  const REMINDER_HISTORY_KEY = 'gentle-reminder-history-v1';
+  const REMINDER_CHECK_INTERVAL = 30000;
   const COLORS = { red: '#f06162', orange: '#eea33b', blue: '#4b9ed6', green: '#49a77a' };
   const COLOR_NAMES = { red: '重要紧急', orange: '重要不急', blue: '紧急不重要', green: '有空再做' };
   const PROJECT_STATUS_NAMES = { not_started: '未开始', doing: '进行中', waiting: 'Waiting', done: '已完成', paused: '暂停' };
@@ -89,6 +91,7 @@
   let expandedHomeLinks = new Set();
   let cloudbaseApp = null;
   let deferredInstallPrompt = null;
+  let reminderTimerHandle = null;
   let toastTimer;
 
   function makeSeed() {
@@ -543,6 +546,7 @@
   function renderProfile() {
     $$('#characterOptions button').forEach((button) => button.classList.toggle('active', button.dataset.character === state.settings.character));
     $('#quoteList').innerHTML = state.settings.quotes.map((quote, index) => `<div class="quote-item"><span>“${escapeHTML(quote)}”</span><button data-quote-index="${index}" aria-label="删除">×</button></div>`).join('');
+    updateNotificationStatus();
   }
 
   function parsePeople(value = '') {
@@ -1502,15 +1506,137 @@
     });
   }
 
-  function checkDueReminder() {
-    if (sessionStorage.getItem('gentle-reminder-shown')) return;
+  function notificationsSupported() {
+    return typeof Notification !== 'undefined' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
+  }
+
+  function updateNotificationStatus() {
+    const status = $('#notificationStatus');
+    const detail = $('#notificationStatusDetail');
+    const button = $('#enableNotificationsBtn');
+    if (!status || !detail || !button) return;
+    button.classList.remove('active');
+    button.disabled = false;
+    if (!notificationsSupported()) {
+      status.textContent = '当前浏览器不支持系统通知';
+      detail.textContent = '请使用 Safari 或 Chrome 打开在线版';
+      button.textContent = '暂不支持';
+      button.disabled = true;
+    } else if (Notification.permission === 'granted') {
+      status.textContent = '系统通知已开启';
+      detail.textContent = '应用保持运行或最小化时，会持续检查到点任务';
+      button.textContent = '已开启';
+      button.classList.add('active');
+    } else if (Notification.permission === 'denied') {
+      status.textContent = '系统通知已被阻止';
+      detail.textContent = '请到“系统设置 → 通知”中允许喵汪待办';
+      button.textContent = '查看说明';
+    } else {
+      status.textContent = '系统通知未开启';
+      detail.textContent = '开启后，应用最小化时也能收到到点提醒';
+      button.textContent = '开启系统通知';
+    }
+  }
+
+  async function showSystemNotification(title, options = {}) {
+    if (!notificationsSupported() || Notification.permission !== 'granted') return false;
+    const notificationOptions = {
+      icon: new URL('./icons/icon-192.png', window.location.href).href,
+      badge: new URL('./icons/icon-192.png', window.location.href).href,
+      ...options
+    };
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, notificationOptions);
+      return true;
+    } catch (error) {
+      try {
+        new Notification(title, notificationOptions);
+        return true;
+      } catch (fallbackError) {
+        console.warn('系统提醒发送失败', error, fallbackError);
+        return false;
+      }
+    }
+  }
+
+  async function requestNotificationPermission(showTest = false) {
+    if (!notificationsSupported()) {
+      alert('当前浏览器不支持系统通知，请使用 Safari 或 Chrome 打开 HTTPS 在线版。');
+      return false;
+    }
+    if (Notification.permission === 'denied') {
+      alert('系统通知已被关闭。请打开“系统设置 → 通知 → 喵汪待办（或 Safari）”，允许通知后再回来测试。');
+      updateNotificationStatus();
+      return false;
+    }
+    const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    updateNotificationStatus();
+    if (permission !== 'granted') {
+      showToast('没有获得系统通知权限');
+      return false;
+    }
+    if (showTest) await showSystemNotification('🐱 喵汪待办提醒测试', { body: '设置成功，应用最小化后也会继续检查到点任务。', tag: 'miaowang-reminder-test', data: { url: './' } });
+    showToast('系统通知已经开启');
+    checkDueReminder();
+    return true;
+  }
+
+  function loadReminderHistory() {
+    try {
+      const history = JSON.parse(localStorage.getItem(REMINDER_HISTORY_KEY) || '{}');
+      const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+      return Object.fromEntries(Object.entries(history).filter(([, timestamp]) => Number(timestamp) >= cutoff));
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function reminderHistoryKey(task) {
+    return `${task.id}:${task.date}:${task.start}`;
+  }
+
+  function saveReminderHistory(history) {
+    localStorage.setItem(REMINDER_HISTORY_KEY, JSON.stringify(history));
+  }
+
+  async function checkDueReminder() {
     const now = new Date();
     const time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    const due = state.tasks.find((task) => task.date === todayISO() && !task.done && !task.archived && task.remind && task.start && task.start <= time);
-    if (due) {
-      sessionStorage.setItem('gentle-reminder-shown', '1');
-      setTimeout(() => showEncouragement(`“${due.name}”在等你`), 700);
+    const history = loadReminderHistory();
+    const dueTasks = state.tasks.filter((task) => task.date === todayISO() && !task.done && !task.archived && task.remind && task.start && task.start <= time && !history[reminderHistoryKey(task)]);
+    if (!dueTasks.length) return;
+
+    if (notificationsSupported() && Notification.permission === 'granted') {
+      for (const task of dueTasks) {
+        const area = AREAS[task.area];
+        const sent = await showSystemNotification(`⏰ ${task.name}`, {
+          body: `${task.start} · ${area ? `${area.icon} ${area.name}` : '到点提醒'}`,
+          tag: `task-${reminderHistoryKey(task)}`,
+          data: { url: './', taskId: task.id }
+        });
+        if (sent) history[reminderHistoryKey(task)] = Date.now();
+      }
+      saveReminderHistory(history);
+      return;
     }
+
+    if (document.visibilityState !== 'hidden') {
+      dueTasks.forEach((task) => { history[reminderHistoryKey(task)] = Date.now(); });
+      saveReminderHistory(history);
+      const extra = dueTasks.length > 1 ? `，还有 ${dueTasks.length - 1} 件事也到点了` : '';
+      showEncouragement(`“${dueTasks[0].name}”在等你${extra}`);
+    }
+  }
+
+  function startReminderWatcher() {
+    clearInterval(reminderTimerHandle);
+    checkDueReminder();
+    reminderTimerHandle = setInterval(checkDueReminder, REMINDER_CHECK_INTERVAL);
+    document.addEventListener('visibilitychange', () => {
+      updateNotificationStatus();
+      if (document.visibilityState === 'visible') checkDueReminder();
+    });
   }
 
   function bindEvents() {
@@ -1545,7 +1671,14 @@
     $('#sheetBackdrop').addEventListener('click', closeOverlays);
     $$('[data-close]').forEach((button) => button.addEventListener('click', closeOverlays));
     $('#encourageBtn').addEventListener('click', () => showEncouragement());
-    $('#testReminderBtn').addEventListener('click', () => showEncouragement('提醒测试成功')); 
+    $('#enableNotificationsBtn').addEventListener('click', () => requestNotificationPermission(true));
+    $('#testReminderBtn').addEventListener('click', async () => {
+      const allowed = (notificationsSupported() && Notification.permission === 'granted') || await requestNotificationPermission(false);
+      if (allowed) {
+        const sent = await showSystemNotification('🐱 喵汪待办提醒测试', { body: '测试成功，最小化应用后也能收到提醒。', tag: 'miaowang-reminder-test', data: { url: './' } });
+        if (sent) showToast('系统提醒已经发出');
+      }
+    });
     $('#todayAddMain').addEventListener('click', () => openTaskForm(null, todayISO()));
     $('#addTomorrowBtn').addEventListener('click', () => openTaskForm(null, toISO(shiftDate(new Date(), 1))));
     $('#addWeekBtn').addEventListener('click', () => {
@@ -1838,5 +1971,5 @@
   setRecurringDefaults();
   renderAll();
   switchPage('today');
-  checkDueReminder();
+  startReminderWatcher();
 })();
