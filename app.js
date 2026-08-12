@@ -89,6 +89,7 @@
   let workflowFilter = 'all';
   let activeWorkflowProjectId = '';
   let expandedHomeLinks = new Set();
+  let selectedTaskDetailId = '';
   let cloudbaseApp = null;
   let deferredInstallPrompt = null;
   let reminderTimerHandle = null;
@@ -100,7 +101,7 @@
     const task = (name, priority, date, period, start, extras = {}) => ({
       id: uid('task'), name, priority, date, period, start, end: '', remind: true,
       area: 'career', urgency: 'best', done: false, carried: false, archived: false, recId: null, record: null,
-      createdAt: Date.now(), updatedAt: Date.now(), mustDo: false, ...extras
+      createdAt: Date.now(), updatedAt: Date.now(), mustDo: false, subtasks: [], ...extras
     });
     const projectOne = uid('project');
     const projectTwo = uid('project');
@@ -166,6 +167,7 @@
           task.area ||= 'career';
           task.urgency ||= 'best';
           task.mustDo = Boolean(task.mustDo);
+          task.subtasks = Array.isArray(task.subtasks) ? task.subtasks.filter((item) => item && typeof item.text === 'string').map((item) => ({ id: item.id || uid('step'), text: item.text.trim(), done: Boolean(item.done), createdAt: item.createdAt || Date.now() })).filter((item) => item.text) : [];
         });
         normalizeTaskOrders(saved);
         const homeTodoIds = new Set(saved.tasks.map((task) => task.id));
@@ -276,10 +278,13 @@
     const checkMark = batchMode ? (selected ? '✓' : '') : (task.done ? '✓' : '');
     const orderControls = reorderable ? `<button type="button" class="task-drag-handle" draggable="true" data-task-drag-id="${task.id}" title="拖动调整顺序" aria-label="拖动调整顺序">⠿</button>` : '';
     const taskActions = reorderable ? `<div class="task-card-actions"><button class="task-order-button" data-action="task-order-up" data-id="${task.id}" aria-label="上移一位">↑</button><button class="task-order-button" data-action="task-order-down" data-id="${task.id}" aria-label="下移一位">↓</button><button class="edit-btn" data-action="edit" data-id="${task.id}" aria-label="编辑">···</button></div>` : `<button class="edit-btn" data-action="edit" data-id="${task.id}" aria-label="编辑">···</button>`;
-    return `<article class="task-card ${reorderable ? 'reorderable' : ''} ${task.done ? 'done' : ''} ${batchMode ? 'batch-mode' : ''} ${selected ? 'batch-selected' : ''}" data-home-task-id="${task.id}" style="--priority:${COLORS[task.priority]}">
+    const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+    const subtaskDone = subtasks.filter((item) => item.done).length;
+    const subtaskMeta = subtasks.length ? `<span class="subtask-count">☷ ${subtaskDone}/${subtasks.length} 小步骤</span>` : '';
+    return `<article class="task-card ${reorderable ? 'reorderable' : ''} ${task.done ? 'done' : ''} ${batchMode ? 'batch-mode' : ''} ${selected ? 'batch-selected' : ''} ${selectedTaskDetailId === task.id ? 'detail-selected' : ''}" data-home-task-id="${task.id}" style="--priority:${COLORS[task.priority]}">
       ${orderControls}
       <button class="check-btn" data-action="${checkAction}" data-id="${task.id}" aria-label="${checkLabel}">${checkMark}</button>
-      <div><strong class="task-name">${escapeHTML(task.name)}</strong><div class="task-meta"><span>${meta}</span><span class="area-tag">${area.icon} ${area.name}</span><span class="urgency-tag ${task.urgency}">${task.urgency === 'must' ? '必须今天' : '最好今天'}</span>${task.carried ? '<span class="carry-tag">↻ 已顺延</span>' : ''}</div></div>
+      <div class="task-card-copy"><strong class="task-name">${escapeHTML(task.name)}</strong><div class="task-meta"><span>${meta}</span><span class="area-tag">${area.icon} ${area.name}</span><span class="urgency-tag ${task.urgency}">${task.urgency === 'must' ? '必须今天' : '最好今天'}</span>${subtaskMeta}${task.carried ? '<span class="carry-tag">↻ 已顺延</span>' : ''}</div></div>
       ${taskActions}${record}${showWorkLinks ? homeTaskLinks(task) : ''}
     </article>`;
   }
@@ -358,7 +363,7 @@
 
   function compactFocusTask(task) {
     const area = AREAS[task.area] || AREAS.career;
-    return `<article class="task-card focus-queued-task" style="--priority:${COLORS[task.priority]}">
+    return `<article class="task-card focus-queued-task ${selectedTaskDetailId === task.id ? 'detail-selected' : ''}" data-home-task-id="${task.id}" style="--priority:${COLORS[task.priority]}">
       <button class="check-btn" data-action="toggle" data-id="${task.id}" aria-label="标记完成"></button>
       <div><strong class="task-name">${escapeHTML(task.name)}</strong><div class="task-meta"><span>${escapeHTML(task.start || task.period)}</span><span>${area.icon} ${area.name}</span></div></div>
       <button class="focus-star-button" data-action="must-do" data-id="${task.id}" aria-label="设为今日唯一必做">☆</button><button class="edit-btn" data-action="edit" data-id="${task.id}" aria-label="编辑">···</button>${homeTaskLinks(task)}
@@ -375,13 +380,104 @@
     const timerLabel = formatFocusTime(focusTimer.secondsLeft);
     const timerProgress = Math.round(focusTimer.secondsLeft / 300 * 100);
     const area = now ? (AREAS[now.area] || AREAS.career) : null;
-    const current = now ? `<article class="focus-current-card ${now.mustDo ? 'must-do' : ''}" style="--priority:${COLORS[now.priority]}">
+    const current = now ? `<article class="focus-current-card ${now.mustDo ? 'must-do' : ''} ${selectedTaskDetailId === now.id ? 'detail-selected' : ''}" data-home-task-id="${now.id}" style="--priority:${COLORS[now.priority]}">
       <div class="focus-current-main"><button class="check-btn" data-action="toggle" data-id="${now.id}" aria-label="标记完成"></button><div><div class="focus-title-line"><strong>${escapeHTML(now.name)}</strong>${now.mustDo ? '<span>唯一必做</span>' : ''}</div><div class="task-meta"><span>${escapeHTML(now.start || now.period)}</span><span>${area.icon} ${area.name}</span></div></div><button class="edit-btn" data-action="edit" data-id="${now.id}">···</button></div>
       <div class="focus-current-actions"><button class="must-do-button ${now.mustDo ? 'active' : ''}" data-action="must-do" data-id="${now.id}">${now.mustDo ? '★ 今日唯一必做' : '☆ 设为唯一必做'}</button><button class="five-minute-button ${timerActive && focusTimer.running ? 'active' : ''}" data-action="focus-timer" data-id="${now.id}">${timerActive && focusTimer.running ? `Ⅱ 暂停 ${timerLabel}` : timerActive && focusTimer.secondsLeft < 300 ? `▶ 继续 ${timerLabel}` : '▶ 先做5分钟'}</button></div>
       ${timerActive ? `<div class="focus-timer-panel"><div><span>${focusTimer.running ? '正在启动，不要求一次做完' : '暂停也没关系，准备好再继续'}</span><button data-action="focus-reset">重置</button></div><div class="focus-timer-track"><i style="width:${timerProgress}%"></i></div></div>` : ''}${homeTaskLinks(now)}
     </article>` : emptyState('今天还没有要做的事', '留白也很好，或者先添加一件最重要的小事。', '🐾');
     const fold = (key, title, copy, list, muted = false) => `<section class="focus-fold-wrap"><button class="focus-fold" data-action="focus-fold" data-section="${key}"><span class="focus-fold-index ${muted ? 'muted' : ''}">${key === 'next' ? 2 : 3}</span><span><strong>${title}</strong><small>${copy}</small></span><b>${list.length} 件</b><i>${openFocusSection === key ? '⌃' : '⌄'}</i></button>${openFocusSection === key ? `<div class="focus-fold-body">${list.length ? list.map(compactFocusTask).join('') : `<p>${key === 'next' ? '暂时没有下一步，安心做好现在这件。' : '稍后列表是空的。'}</p>`}</div>` : ''}</section>`;
     return `<div class="focus-section-label"><span>NOW</span><strong>现在，只看这一件</strong></div>${current}${fold('next', '下一步', '当前任务结束后再看', next)}${fold('later', '稍后', '先收起来，不占用注意力', later, true)}<button class="show-all-tasks" data-action="show-all">查看全部与已完成 ›</button>`;
+  }
+
+  function taskSubtasks(task) {
+    if (!Array.isArray(task.subtasks)) task.subtasks = [];
+    return task.subtasks;
+  }
+
+  function renderTaskBreakdown() {
+    const panel = $('#taskBreakdownPanel');
+    if (!panel) return;
+    const task = state.tasks.find((item) => item.id === selectedTaskDetailId && !item.archived);
+    panel.classList.toggle('has-task', Boolean(task));
+    if (!task) {
+      selectedTaskDetailId = '';
+      panel.innerHTML = `<div class="breakdown-empty"><span>☷</span><h3>点开一件事，把它拆小</h3><p>不用一次想清全部。先写下一个能立刻开始的小动作，让大脑只看下一步。</p><div><b>1</b><small>点击左侧待办</small><b>2</b><small>每行写一个小步骤</small><b>3</b><small>做完一个勾一个</small></div></div>`;
+      return;
+    }
+
+    const subtasks = taskSubtasks(task);
+    const doneCount = subtasks.filter((item) => item.done).length;
+    const progress = subtasks.length ? Math.round(doneCount / subtasks.length * 100) : 0;
+    const area = AREAS[task.area] || AREAS.career;
+    const list = subtasks.length ? subtasks.map((item, index) => `<div class="breakdown-step ${item.done ? 'done' : ''}">
+      <button class="breakdown-check" data-action="toggle-subtask" data-id="${task.id}" data-subtask-id="${item.id}" aria-label="${item.done ? '改回未完成' : '完成这个小步骤'}">${item.done ? '✓' : ''}</button>
+      <span><small>STEP ${index + 1}</small><strong>${escapeHTML(item.text)}</strong></span>
+      <button class="breakdown-delete" data-action="delete-subtask" data-id="${task.id}" data-subtask-id="${item.id}" aria-label="删除这个小步骤">×</button>
+    </div>`).join('') : `<div class="breakdown-first-step"><span>＋</span><p><strong>先写下第一个可以动手的动作</strong><small>例如“打开招聘网站”“列出三个问题”“找到文件夹”</small></p></div>`;
+    panel.innerHTML = `<div class="breakdown-head">
+      <div><p class="eyebrow">MAKE IT CONCRETE</p><span class="breakdown-area">${area.icon} ${area.name}</span></div>
+      <button data-action="close-task-detail" aria-label="关闭拆解面板">×</button>
+    </div>
+    <h3 class="breakdown-title">${escapeHTML(task.name)}</h3>
+    <div class="breakdown-summary"><span>${doneCount} 项完成 · 共 ${subtasks.length} 项</span>${doneCount ? `<button data-action="clear-done-subtasks" data-id="${task.id}">清除已完成</button>` : ''}</div>
+    <div class="breakdown-progress" style="--breakdown-progress:${progress}%"><i></i></div>
+    <div class="breakdown-list">${list}</div>
+    <form class="breakdown-form" id="breakdownForm">
+      <label for="breakdownInput">把它拆成更小的行动</label>
+      <textarea id="breakdownInput" rows="4" maxlength="600" placeholder="每行写一个小步骤…&#10;例如：&#10;打开面试资料&#10;写下 3 个想问的问题"></textarea>
+      <div><small>支持一次粘贴多行，回车换行</small><button type="submit">＋ 加入小步骤</button></div>
+    </form>
+    <button class="breakdown-edit-main" data-action="edit" data-id="${task.id}">编辑主待办的时间与分类</button>`;
+  }
+
+  function openTaskBreakdown(taskId) {
+    if (batchMode || !state.tasks.some((task) => task.id === taskId)) return;
+    selectedTaskDetailId = taskId;
+    renderToday();
+    if (window.innerWidth < 860) $('#taskBreakdownPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function addTaskSubtasks(event) {
+    event.preventDefault();
+    const task = state.tasks.find((item) => item.id === selectedTaskDetailId);
+    const input = $('#breakdownInput');
+    if (!task || !input) return;
+    const texts = input.value.split(/\n+/).map((text) => text.trim().replace(/^[-*•]\s*/, '')).filter(Boolean);
+    if (!texts.length) return showToast('先写下一个可以动手的小步骤');
+    const existing = new Set(taskSubtasks(task).map((item) => item.text.toLowerCase()));
+    const fresh = texts.filter((text) => !existing.has(text.toLowerCase()));
+    fresh.forEach((text) => task.subtasks.push({ id: uid('step'), text: text.slice(0, 120), done: false, createdAt: Date.now() }));
+    if (!fresh.length) return showToast('这些小步骤已经在清单里了');
+    task.updatedAt = Date.now();
+    saveState();
+    renderToday();
+    showToast(`已经拆成 ${fresh.length} 个小步骤`);
+    $('#breakdownInput')?.focus();
+  }
+
+  function handleSubtaskAction(action) {
+    const task = state.tasks.find((item) => item.id === action.dataset.id);
+    if (!task) return;
+    const subtasks = taskSubtasks(task);
+    if (action.dataset.action === 'toggle-subtask') {
+      const subtask = subtasks.find((item) => item.id === action.dataset.subtaskId);
+      if (!subtask) return;
+      subtask.done = !subtask.done;
+      task.updatedAt = Date.now();
+      saveState(); renderToday();
+      showToast(subtask.done ? '这个小步骤完成了 ✓' : '已改回待完成');
+    }
+    if (action.dataset.action === 'delete-subtask') {
+      task.subtasks = subtasks.filter((item) => item.id !== action.dataset.subtaskId);
+      task.updatedAt = Date.now();
+      saveState(); renderToday();
+    }
+    if (action.dataset.action === 'clear-done-subtasks') {
+      task.subtasks = subtasks.filter((item) => !item.done);
+      task.updatedAt = Date.now();
+      saveState(); renderToday();
+      showToast('已完成的小步骤已经清理');
+    }
   }
 
   function renderToday() {
@@ -409,6 +505,7 @@
 
     if (!batchMode && todayMode === 'timeline' && !showAllTasks) {
       $('#todayTaskList').innerHTML = renderFocusView(allToday);
+      renderTaskBreakdown();
       return;
     }
 
@@ -420,6 +517,7 @@
       grouped = PERIOD_ORDER.map((period) => ({ period, tasks: visible.filter((task) => task.period === period).sort((a, b) => taskSortValue(a).localeCompare(taskSortValue(b))) })).filter((group) => group.tasks.length);
       $('#todayTaskList').innerHTML = grouped.length ? grouped.map((group) => `<section class="period-group"><div class="period-title"><h3>${group.period}</h3><span>${group.tasks.filter((task) => task.done).length}/${group.tasks.length} 完成</span></div>${group.tasks.map((task) => taskCard(task, true)).join('')}</section>`).join('') : emptyState(todayMode === 'done' ? '还没有完成记录' : '今天还没有安排', todayMode === 'done' ? '完成一件小事后，它会出现在这里。' : '从上面的输入框或“添加今天要做的事”开始吧。', '🐾');
     }
+    renderTaskBreakdown();
   }
 
   function renderAiPlans() {
@@ -804,7 +902,7 @@
       if (existing?.date !== payload.date) payload.manualOrder = undefined;
       Object.assign(existing, payload);
     }
-    else state.tasks.push({ id: uid('task'), ...payload, done: false, carried: false, archived: false, mustDo: false, recId: null, record: null, createdAt: Date.now() });
+    else state.tasks.push({ id: uid('task'), ...payload, done: false, carried: false, archived: false, mustDo: false, recId: null, record: null, subtasks: [], createdAt: Date.now() });
     saveState();
     closeOverlays();
     renderAll();
@@ -860,6 +958,7 @@
     const id = $('#taskId').value;
     if (!id || !confirm('要删除这件事吗？')) return;
     state.tasks = state.tasks.filter((task) => task.id !== id);
+    if (selectedTaskDetailId === id) selectedTaskDetailId = '';
     saveState();
     closeOverlays();
     renderAll();
@@ -1689,6 +1788,7 @@
     $('#quickAddBtn').addEventListener('click', addQuickNote);
     $('#quickInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') addQuickNote(); });
     $('#quickVoiceBtn').addEventListener('click', () => { $('#quickInput').focus(); showToast('可以直接输入，语音能力将在小程序端接入'); });
+    $('#taskBreakdownPanel').addEventListener('submit', addTaskSubtasks);
     $('#thoughtsToggle').addEventListener('click', () => {
       $('#thoughtsBody').classList.toggle('hidden');
       $('#thoughtsToggle').classList.toggle('open');
@@ -1787,6 +1887,8 @@
       $$('.task-card.reorderable', $('#todayTaskList')).forEach((item) => item.classList.remove('dragging', 'drag-over'));
     });
     document.addEventListener('click', (event) => {
+      const homeTaskCard = event.target.closest('[data-home-task-id]');
+      if (homeTaskCard && !event.target.closest('button,input,textarea,select,a') && !batchMode) openTaskBreakdown(homeTaskCard.dataset.homeTaskId);
       const action = event.target.closest('[data-action]');
       if (!action) return;
       if (['toggle', 'edit', 'batch-select'].includes(action.dataset.action)) handleTaskAction(action);
@@ -1797,6 +1899,8 @@
       if (action.dataset.action === 'show-all') { showAllTasks = true; renderToday(); }
       if (action.dataset.action === 'task-order-up') moveTaskInArea(action.dataset.id, -1);
       if (action.dataset.action === 'task-order-down') moveTaskInArea(action.dataset.id, 1);
+      if (['toggle-subtask', 'delete-subtask', 'clear-done-subtasks'].includes(action.dataset.action)) handleSubtaskAction(action);
+      if (action.dataset.action === 'close-task-detail') { selectedTaskDetailId = ''; renderToday(); }
       if (action.dataset.action === 'toggle-home-links') {
         if (expandedHomeLinks.has(action.dataset.id)) expandedHomeLinks.delete(action.dataset.id);
         else expandedHomeLinks.add(action.dataset.id);
