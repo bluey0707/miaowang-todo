@@ -226,7 +226,7 @@ body { background: radial-gradient(circle at 50% -10%, #f9f9fc 0, #e7e9f1 62%, #
   .desktop-nav-note { margin-top:auto; padding:14px; border-radius:16px; color:#6c7084; background:#f4f5f9; }.desktop-nav-note span { font-size:22px; }.desktop-nav-note p { margin:7px 0 0; font-size:10px; line-height:1.7; }
   .page { width:auto; max-width:1480px; min-height:100vh; margin-left:var(--desktop-nav); padding:calc(var(--desktop-header) + 30px) 38px 54px; }
   #todayPage.active { display:grid; grid-template-columns:minmax(520px,1.7fr) minmax(310px,.85fr); grid-auto-rows:min-content; column-gap:28px; align-items:start; }
-  #todayPage .today-intro { grid-column:1/-1; grid-row:1; margin:0 0 24px; padding:27px 30px; grid-template-columns:minmax(280px,.7fr) minmax(520px,1.3fr); gap:28px; border-radius:28px; }
+  #todayPage .today-intro { position:sticky; z-index:24; top:calc(var(--desktop-header) + 14px); grid-column:1/-1; grid-row:1; margin:0 0 24px; padding:27px 30px; grid-template-columns:minmax(280px,.7fr) minmax(520px,1.3fr); gap:28px; border-radius:28px; }
   .today-intro-copy { align-self:center; }.date-line { font-size:27px; }.weather-copy { margin-top:8px; font-size:14px; }
   .progress-periods { grid-template-columns:minmax(260px,1.7fr) minmax(140px,.65fr) minmax(140px,.65fr); align-items:stretch; }.today-progress-card { grid-column:auto; }.period-progress { min-height:104px; grid-template-columns:54px 1fr; padding:17px 14px; }.period-progress > div { width:52px; height:52px; }.period-progress > div::before { inset:6px; }.period-progress strong { font-size:12px; }.period-progress span { font-size:12px; }.period-progress small { font-size:10px; }
   #todayPage .carry-banner { grid-column:1/-1; grid-row:2; margin:0 0 18px; }

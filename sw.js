@@ -1,4 +1,4 @@
-const CACHE_NAME = 'miaowang-todo-shell-v4';
+const CACHE_NAME = 'miaowang-todo-shell-v5';
 const BASE_URL = new URL('./', self.location.href);
 const APP_SHELL = ['', 'index.html', 'styles.css', 'app.js', 'web-config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png']
   .map((path) => new URL(path, BASE_URL).href);
